@@ -1,4 +1,3 @@
-# .github/workflows/ipq60xx-Qwen.yml
 name: ipq60xx-Qwen
 
 on:
