@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: '选择编译分支 (all表示全部)'
+        description: 'Select compile branch (all means all)'
         required: true
         default: 'all'
         type: choice
@@ -14,7 +14,7 @@ on:
         - immortalwrt
         - libwrt
       target_config:
-        description: '选择配置类型 (all表示全部)'
+        description: 'Select config type (all means all)'
         required: true
         default: 'all'
         type: choice
@@ -25,7 +25,6 @@ on:
         - Ultra
 
 env:
-  # 全局环境变量
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   WORKFLOW_NAME: "ipq60xx-Qwen"
   TARGET_CHIP: "ipq60xx"
@@ -45,49 +44,49 @@ jobs:
     outputs:
       build_matrix: ${{ steps.matrix.outputs.build_matrix }}
     steps:
-    - name: 输出开始信息
+    - name: Output start info
       run: |
-        echo "=== 准备编译矩阵 ==="
-        echo "分支: ${{ inputs.target_branch }}"
-        echo "配置: ${{ inputs.target_config }}"
+        echo "=== Prepare build matrix ==="
+        echo "Branch: ${{ inputs.target_branch }}"
+        echo "Config: ${{ inputs.target_config }}"
         
-    - name: 检出仓库
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         
-    - name: 准备工作目录
+    - name: Prepare work directory
       run: |
         mkdir -p ${{ env.BUILD_DIR }} ${{ env.TEMP_DIR }} ${{ env.LOG_DIR }} ${{ env.CCACHE_DIR }} ${{ env.DL_DIR }} ${{ env.STAGING_DIR }}
-        echo "工作目录准备完成"
+        echo "Work directory prepared"
         
-    - name: 生成编译矩阵
+    - name: Generate build matrix
       id: matrix
       run: |
-        # 读取输入参数
+        # Read input parameters
         TARGET_BRANCH="${{ inputs.target_branch }}"
         TARGET_CONFIG="${{ inputs.target_config }}"
         
-        # 定义分支信息
+        # Define branch info
         declare -A BRANCHES
         BRANCHES["openwrt"]="https://github.com/laipeng668/openwrt.git:master:openwrt"
         BRANCHES["immortalwrt"]="https://github.com/laipeng668/immortalwrt.git:master:immwrt"
         BRANCHES["libwrt"]="https://github.com/laipeng668/openwrt-6.x.git:k6.12-nss:libwrt"
         
-        # 构建矩阵
+        # Build matrix
         MATRIX="["
         FIRST=true
         
-        # 确定要编译的分支
+        # Determine branches to build
         if [ "$TARGET_BRANCH" = "all" ]; then
           BRANCHES_TO_BUILD=("openwrt" "immortalwrt" "libwrt")
         else
           BRANCHES_TO_BUILD=("$TARGET_BRANCH")
         fi
         
-        # 确定要编译的配置
+        # Determine configs to build
         if [ "$TARGET_CONFIG" = "all" ]; then
-          CONFIGS_TO_BUILD=("Ultra" "Max" "Pro")  # 按照Ultra, Max, Pro顺序以最大化缓存命中
+          CONFIGS_TO_BUILD=("Ultra" "Max" "Pro")  # Order Ultra, Max, Pro to maximize cache hit
         else
           CONFIGS_TO_BUILD=("$TARGET_CONFIG")
         fi
@@ -109,7 +108,7 @@ jobs:
         
         MATRIX+="]"
         echo "build_matrix=$MATRIX" >> $GITHUB_OUTPUT
-        echo "编译矩阵: $MATRIX"
+        echo "Build matrix: $MATRIX"
         
   build:
     needs: prepare
@@ -118,28 +117,28 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.build_matrix) }}
       max-parallel: 3
     steps:
-    - name: 输出编译信息
+    - name: Output compile info
       run: |
-        echo "=== 开始编译 ==="
-        echo "分支: ${{ matrix.branch }}"
-        echo "仓库: ${{ matrix.repo_url }}"
-        echo "分支: ${{ matrix.repo_branch }}"
-        echo "缩写: ${{ matrix.repo_short }}"
-        echo "配置: ${{ matrix.config }}"
+        echo "=== Start compile ==="
+        echo "Branch: ${{ matrix.branch }}"
+        echo "Repo: ${{ matrix.repo_url }}"
+        echo "Branch: ${{ matrix.repo_branch }}"
+        echo "Short: ${{ matrix.repo_short }}"
+        echo "Config: ${{ matrix.config }}"
         
-    - name: 检出仓库
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         
-    - name: 设置编译环境
+    - name: Setup compile environment
       run: |
-        echo "设置编译环境..."
+        echo "Setup compile environment..."
         sudo apt-get update
         sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev python3-pip python3-pyelftools rsync unzip zlib1g-dev file wget subversion patch cmake squashfs-tools cpio
-        echo "编译环境设置完成"
+        echo "Compile environment setup complete"
         
-    - name: 恢复CCache缓存
+    - name: Restore CCache
       uses: actions/cache@v4
       with:
         path: ${{ env.CCACHE_DIR }}
@@ -149,7 +148,7 @@ jobs:
           ccache-${{ env.CACHE_VERSION }}-${{ matrix.repo_short }}-
           ccache-${{ env.CACHE_VERSION }}-
           
-    - name: 恢复DL缓存
+    - name: Restore DL
       uses: actions/cache@v4
       with:
         path: ${{ env.DL_DIR }}
@@ -158,7 +157,7 @@ jobs:
           dl-${{ env.CACHE_VERSION }}-${{ matrix.repo_short }}-
           dl-${{ env.CACHE_VERSION }}-
           
-    - name: 恢复STAGING缓存
+    - name: Restore STAGING
       uses: actions/cache@v4
       with:
         path: ${{ env.STAGING_DIR }}
@@ -168,142 +167,142 @@ jobs:
           staging-${{ env.CACHE_VERSION }}-${{ matrix.repo_short }}-
           staging-${{ env.CACHE_VERSION }}-
           
-    - name: 检查缓存状态
+    - name: Check cache status
       run: |
-        echo "=== 检查缓存状态 ==="
-        echo "CCache目录大小: $(du -sh ${{ env.CCACHE_DIR }} | cut -f1)"
-        echo "DL目录大小: $(du -sh ${{ env.DL_DIR }} | cut -f1)"
-        echo "Staging目录大小: $(du -sh ${{ env.STAGING_DIR }} | cut -f1)"
+        echo "=== Check cache status ==="
+        echo "CCache dir size: $(du -sh ${{ env.CCACHE_DIR }} | cut -f1)"
+        echo "DL dir size: $(du -sh ${{ env.DL_DIR }} | cut -f1)"
+        echo "Staging dir size: $(du -sh ${{ env.STAGING_DIR }} | cut -f1)"
         
-    - name: 克隆OpenWrt源码
+    - name: Clone OpenWrt source
       run: |
-        echo "开始克隆 ${{ matrix.repo_url }} 分支 ${{ matrix.repo_branch }}"
+        echo "Start clone ${{ matrix.repo_url }} branch ${{ matrix.repo_branch }}"
         git clone --depth 1 --branch ${{ matrix.repo_branch }} ${{ matrix.repo_url }} ${{ env.BUILD_DIR }}
         cd ${{ env.BUILD_DIR }}
-        echo "源码克隆完成"
+        echo "Source clone complete"
         
-    - name: 初始化feeds
+    - name: Initialize feeds
       run: |
         cd ${{ env.BUILD_DIR }}
-        echo "初始化feeds..."
+        echo "Initialize feeds..."
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        echo "feeds初始化完成"
+        echo "Feeds initialize complete"
         
-    - name: 准备配置文件
+    - name: Prepare config file
       run: |
         cd ${{ env.BUILD_DIR }}
-        echo "准备配置文件..."
+        echo "Prepare config file..."
         
-        # 合并配置文件 - 按照 芯片配置 > 分支配置 > 软件包配置 的顺序
+        # Merge config files - chip config > branch config > package config
         cat $GITHUB_WORKSPACE/configs/${{ env.TARGET_CHIP }}_base.config > .config
         if [ -f "$GITHUB_WORKSPACE/configs/${{ matrix.repo_short }}_base.config" ]; then
             cat $GITHUB_WORKSPACE/configs/${{ matrix.repo_short }}_base.config >> .config
         fi
         cat $GITHUB_WORKSPACE/configs/${{ matrix.config }}.config >> .config
         
-        # 保存原始配置用于调试
+        # Save original config for debug
         cp .config ${{ env.LOG_DIR }}/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-raw-${{ matrix.config }}.config
         
-        echo "配置文件准备完成"
-        echo "最终配置文件内容："
+        echo "Config file prepare complete"
+        echo "Final config file content:"
         head -20 .config
         
-    - name: 获取设备列表
+    - name: Get device list
       id: devices
       run: |
         cd ${{ env.BUILD_DIR }}
-        echo "获取设备列表..."
+        echo "Get device list..."
         
-        # 从配置文件中提取设备名称
+        # Extract device names from config file
         DEVICES=$(grep -oP 'CONFIG_TARGET_DEVICE_.*?_DEVICE_\K[^=]*' .config | grep -v 'PACKAGES' | sort -u)
-        echo "检测到设备: $DEVICES"
+        echo "Detected devices: $DEVICES"
         
-        # 将设备列表保存到输出
+        # Save device list to output
         echo "devices=$DEVICES" >> $GITHUB_OUTPUT
         
-    - name: 配置编译选项
+    - name: Configure compile options
       run: |
         cd ${{ env.BUILD_DIR }}
-        echo "配置编译选项..."
+        echo "Configure compile options..."
         
-        # 设置环境变量
+        # Set environment variables
         export CCACHE_DIR=${{ env.CCACHE_DIR }}
         export DL_DIR=${{ env.DL_DIR }}
         export STAGING_DIR=${{ env.STAGING_DIR }}
         
-        # 执行make menuconfig前的预处理
+        # Execute pre-make menuconfig
         make defconfig
         
-        echo "编译选项配置完成"
+        echo "Compile options configure complete"
         
-    - name: 编译固件
+    - name: Compile firmware
       run: |
         cd ${{ env.BUILD_DIR }}
-        echo "开始编译固件..."
+        echo "Start compile firmware..."
         
-        # 设置环境变量
+        # Set environment variables
         export CCACHE_DIR=${{ env.CCACHE_DIR }}
         export DL_DIR=${{ env.DL_DIR }}
         export STAGING_DIR=${{ env.STAGING_DIR }}
         
-        # 执行编译命令
+        # Execute compile command
         timeout 4h make -j$(nproc) V=s 2>&1 | tee ${{ env.LOG_DIR }}/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ matrix.config }}.log
         
-        # 检查编译状态
+        # Check compile status
         if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "错误: 编译失败!"
-            # 输出错误前1000行日志
-            echo "=== 错误前1000行日志 ==="
+            echo "Error: Compile failed!"
+            # Output error last 1000 lines log
+            echo "=== Error last 1000 lines log ==="
             tail -1000 ${{ env.LOG_DIR }}/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ matrix.config }}.log
             exit 1
         fi
         
-        echo "固件编译完成"
+        echo "Firmware compile complete"
         
-    - name: 处理产出物
+    - name: Process artifacts
       run: |
         cd ${{ env.BUILD_DIR }}
-        echo "处理产出物..."
+        echo "Process artifacts..."
         
-        # 创建临时目录
+        # Create temp directory
         mkdir -p ${{ env.TEMP_DIR }}/firmware ${{ env.TEMP_DIR }}/configs ${{ env.TEMP_DIR }}/logs ${{ env.TEMP_DIR }}/apps
         
-        # 复制并重命名固件文件
+        # Copy and rename firmware files
         for device in ${{ steps.devices.outputs.devices }}; do
-            echo "处理设备 $device 的固件..."
+            echo "Process device $device firmware..."
             
-            # 复制factory固件
+            # Copy factory firmware
             for factory_file in bin/targets/*/*/*-factory.bin; do
                 if [[ $factory_file == *"${{ env.TARGET_CHIP }}"* && $factory_file == *"$device"* && $factory_file == *"-factory.bin"* ]]; then
                     cp "$factory_file" "${{ env.TEMP_DIR }}/firmware/${{ matrix.repo_short }}-$device-factory-${{ matrix.config }}.bin"
-                    echo "已复制并重命名factory固件: $factory_file -> ${{ matrix.repo_short }}-$device-factory-${{ matrix.config }}.bin"
+                    echo "Copied and renamed factory firmware: $factory_file -> ${{ matrix.repo_short }}-$device-factory-${{ matrix.config }}.bin"
                 fi
             done
             
-            # 复制sysupgrade固件
+            # Copy sysupgrade firmware
             for sysupgrade_file in bin/targets/*/*/*-sysupgrade.bin; do
                 if [[ $sysupgrade_file == *"${{ env.TARGET_CHIP }}"* && $sysupgrade_file == *"$device"* && $sysupgrade_file == *"-sysupgrade.bin"* ]]; then
                     cp "$sysupgrade_file" "${{ env.TEMP_DIR }}/firmware/${{ matrix.repo_short }}-$device-sysupgrade-${{ matrix.config }}.bin"
-                    echo "已复制并重命名sysupgrade固件: $sysupgrade_file -> ${{ matrix.repo_short }}-$device-sysupgrade-${{ matrix.config }}.bin"
+                    echo "Copied and renamed sysupgrade firmware: $sysupgrade_file -> ${{ matrix.repo_short }}-$device-sysupgrade-${{ matrix.config }}.bin"
                 fi
             done
         done
         
-        # 复制配置相关文件
+        # Copy config related files
         cp .config "${{ env.TEMP_DIR }}/configs/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ steps.devices.outputs.devices }}-${{ matrix.config }}.config"
         cp .config.buildinfo "${{ env.TEMP_DIR }}/configs/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ steps.devices.outputs.devices }}-${{ matrix.config }}.config.buildinfo" || true
         
-        # 查找并复制manifest文件
+        # Find and copy manifest file
         find . -name "*.manifest" -exec cp {} "${{ env.TEMP_DIR }}/configs/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ steps.devices.outputs.devices }}-${{ matrix.config }}.manifest" \; || true
         
-        # 复制日志文件
+        # Copy log file
         cp ${{ env.LOG_DIR }}/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ matrix.config }}.log "${{ env.TEMP_DIR }}/logs/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ matrix.config }}.log"
         
-        # 提取错误和警告日志
+        # Extract error and warning logs
         grep -i "error\|warning\|Error\|Warning" ${{ env.LOG_DIR }}/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ matrix.config }}.log > "${{ env.TEMP_DIR }}/logs/${{ matrix.repo_short }}-${{ env.TARGET_CHIP }}-${{ matrix.config }}-errors-warnings.log" || true
         
-        # 复制软件包
+        # Copy packages
         if [ -d "bin/packages" ]; then
             find bin/packages -name "*.ipk" -exec cp {} ${{ env.TEMP_DIR }}/apps/ \; || true
         fi
@@ -312,30 +311,30 @@ jobs:
             find bin/targets -name "*.ipk" -exec cp {} ${{ env.TEMP_DIR }}/apps/ \; || true
         fi
         
-        echo "产出物处理完成"
+        echo "Artifacts process complete"
         
-    - name: 上传固件artifact
+    - name: Upload firmware artifact
       uses: actions/upload-artifact@v4
       with:
         name: firmware-${{ matrix.repo_short }}-${{ matrix.config }}
         path: ${{ env.TEMP_DIR }}/firmware/
         retention-days: 7
         
-    - name: 上传配置artifact
+    - name: Upload config artifact
       uses: actions/upload-artifact@v4
       with:
         name: configs-${{ matrix.repo_short }}-${{ matrix.config }}
         path: ${{ env.TEMP_DIR }}/configs/
         retention-days: 7
         
-    - name: 上传日志artifact
+    - name: Upload log artifact
       uses: actions/upload-artifact@v4
       with:
         name: logs-${{ matrix.repo_short }}-${{ matrix.config }}
         path: ${{ env.TEMP_DIR }}/logs/
         retention-days: 14
         
-    - name: 上传应用artifact
+    - name: Upload app artifact
       uses: actions/upload-artifact@v4
       with:
         name: apps-${{ matrix.repo_short }}-${{ matrix.config }}
@@ -345,125 +344,125 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-22.04
-    if: always()  # 即使构建失败也运行，以确保日志发布
+    if: always()  # Run even if build fails to ensure log publishing
     permissions:
-      contents: write  # 给予创建发布所需的权限
+      contents: write  # Give permission to create release
     steps:
-    - name: 输出发布信息
+    - name: Output release info
       run: |
-        echo "=== 准备发布 ==="
-        echo "检查所有构建状态..."
+        echo "=== Prepare release ==="
+        echo "Check all build status..."
         
-    - name: 检查构建状态
+    - name: Check build status
       run: |
-        # 检查是否所有构建都成功
+        # Check if all builds succeeded
         BUILD_STATUS="${{ needs.build.result }}"
-        echo "构建状态: $BUILD_STATUS"
+        echo "Build status: $BUILD_STATUS"
         
         if [ "$BUILD_STATUS" != "success" ] && [ "$BUILD_STATUS" != "skipped" ]; then
-            echo "警告: 部分构建失败，但仍发布日志"
-            # 这里我们继续执行发布日志的步骤
+            echo "Warning: Some builds failed, but still publish logs"
+            # Continue to execute log publishing steps
         fi
         
-    - name: 下载所有artifacts
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: ${{ env.TEMP_DIR }}/downloads
         
-    - name: 检查下载的文件
+    - name: Check downloaded files
       run: |
-        echo "检查下载的文件..."
+        echo "Check downloaded files..."
         ls -la ${{ env.TEMP_DIR }}/downloads/
         find ${{ env.TEMP_DIR }}/downloads/ -name "*-factory-*.bin" -type f
         find ${{ env.TEMP_DIR }}/downloads/ -name "*-sysupgrade-*.bin" -type f
         
-    - name: 整理发布内容
+    - name: Organize release content
       run: |
-        echo "整理发布内容..."
+        echo "Organize release content..."
         
-        # 创建发布目录
+        # Create release directory
         RELEASE_DIR="${{ env.TEMP_DIR }}/release"
         mkdir -p "$RELEASE_DIR/firmware" "$RELEASE_DIR/configs" "$RELEASE_DIR/logs" "$RELEASE_DIR/apps"
         
-        # 合并所有固件 - 从下载的artifact中查找并复制
-        echo "查找并合并固件文件..."
-        find ${{ env.TEMP_DIR }}/downloads -name "*-factory-*.bin" -exec cp {} "$RELEASE_DIR/firmware/" \; 2>/dev/null || echo "未找到factory固件"
-        find ${{ env.TEMP_DIR }}/downloads -name "*-sysupgrade-*.bin" -exec cp {} "$RELEASE_DIR/firmware/" \; 2>/dev/null || echo "未找到sysupgrade固件"
+        # Merge all firmware - find and copy from downloaded artifacts
+        echo "Find and merge firmware files..."
+        find ${{ env.TEMP_DIR }}/downloads -name "*-factory-*.bin" -exec cp {} "$RELEASE_DIR/firmware/" \; 2>/dev/null || echo "No factory firmware found"
+        find ${{ env.TEMP_DIR }}/downloads -name "*-sysupgrade-*.bin" -exec cp {} "$RELEASE_DIR/firmware/" \; 2>/dev/null || echo "No sysupgrade firmware found"
         
-        # 检查固件是否成功复制
+        # Check if firmware was successfully copied
         FIRMWARE_COUNT=$(find "$RELEASE_DIR/firmware" -name "*.bin" | wc -l)
-        echo "找到 $FIRMWARE_COUNT 个固件文件"
+        echo "Found $FIRMWARE_COUNT firmware files"
         
-        # 合并所有配置文件并打包
-        echo "查找并合并配置文件..."
-        find ${{ env.TEMP_DIR }}/downloads -name "*.config" -exec cp {} "$RELEASE_DIR/configs/" \; 2>/dev/null || echo "未找到配置文件"
-        find ${{ env.TEMP_DIR }}/downloads -name "*.config.buildinfo" -exec cp {} "$RELEASE_DIR/configs/" \; 2>/dev/null || echo "未找到buildinfo文件"
-        find ${{ env.TEMP_DIR }}/downloads -name "*.manifest" -exec cp {} "$RELEASE_DIR/configs/" \; 2>/dev/null || echo "未找到manifest文件"
-        tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-config.tar.gz" -C "$RELEASE_DIR/configs" . 2>/dev/null || echo "配置打包失败"
+        # Merge all config files and package
+        echo "Find and merge config files..."
+        find ${{ env.TEMP_DIR }}/downloads -name "*.config" -exec cp {} "$RELEASE_DIR/configs/" \; 2>/dev/null || echo "No config files found"
+        find ${{ env.TEMP_DIR }}/downloads -name "*.config.buildinfo" -exec cp {} "$RELEASE_DIR/configs/" \; 2>/dev/null || echo "No buildinfo files found"
+        find ${{ env.TEMP_DIR }}/downloads -name "*.manifest" -exec cp {} "$RELEASE_DIR/configs/" \; 2>/dev/null || echo "No manifest files found"
+        tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-config.tar.gz" -C "$RELEASE_DIR/configs" . 2>/dev/null || echo "Config packaging failed"
         
-        # 合并所有日志并打包
-        echo "查找并合并日志文件..."
-        find ${{ env.TEMP_DIR }}/downloads -name "*.log" -exec cp {} "$RELEASE_DIR/logs/" \; 2>/dev/null || echo "未找到日志文件"
-        tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-log.tar.gz" -C "$RELEASE_DIR/logs" . 2>/dev/null || echo "日志打包失败"
+        # Merge all logs and package
+        echo "Find and merge log files..."
+        find ${{ env.TEMP_DIR }}/downloads -name "*.log" -exec cp {} "$RELEASE_DIR/logs/" \; 2>/dev/null || echo "No log files found"
+        tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-log.tar.gz" -C "$RELEASE_DIR/logs" . 2>/dev/null || echo "Log packaging failed"
         
-        # 合并所有应用并打包
-        echo "查找并合并应用文件..."
-        find ${{ env.TEMP_DIR }}/downloads -path "*/apps/*" -name "*.ipk" -exec cp {} "$RELEASE_DIR/apps/" \; 2>/dev/null || echo "未找到应用文件"
-        tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-app.tar.gz" -C "$RELEASE_DIR/apps" . 2>/dev/null || echo "应用打包失败"
+        # Merge all apps and package
+        echo "Find and merge app files..."
+        find ${{ env.TEMP_DIR }}/downloads -path "*/apps/*" -name "*.ipk" -exec cp {} "$RELEASE_DIR/apps/" \; 2>/dev/null || echo "No app files found"
+        tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-app.tar.gz" -C "$RELEASE_DIR/apps" . 2>/dev/null || echo "App packaging failed"
         
-        # 检查是否有固件文件
+        # Check if there are firmware files
         if [ -z "$(ls -A $RELEASE_DIR/firmware/ 2>/dev/null)" ]; then
-            echo "警告: 没有找到任何固件文件，创建一个占位文件"
-            echo "没有找到固件文件，请检查编译步骤" > "$RELEASE_DIR/firmware/NO_FIRMWARE.txt"
+            echo "Warning: No firmware files found, creating a placeholder file"
+            echo "No firmware files found, please check compile steps" > "$RELEASE_DIR/firmware/NO_FIRMWARE.txt"
         fi
         
-        echo "发布内容整理完成"
+        echo "Release content organized"
         
-    - name: 生成发布说明
+    - name: Generate release notes
       run: |
-        # 生成发布说明
+        # Generate release notes
         DATE=$(date +%Y-%m-%d)
         RELEASE_DIR="${{ env.TEMP_DIR }}/release"
         
-        # 使用echo命令逐行创建README，避免YAML语法问题
-        echo "# OpenWrt固件发布 - $DATE" > "$RELEASE_DIR/README.md"
+        # Use echo command to create README line by line to avoid YAML syntax issues
+        echo "# OpenWrt Firmware Release - $DATE" > "$RELEASE_DIR/README.md"
         echo "" >> "$RELEASE_DIR/README.md"
-        echo "## 设备信息" >> "$RELEASE_DIR/README.md"
-        echo "- 支持芯片: ${{ env.TARGET_CHIP }}" >> "$RELEASE_DIR/README.md"
-        echo "- 包含设备: 京东云亚瑟(jdcloud_re-ss-01)、京东云雅典娜(jdcloud_re-cs-02)" >> "$RELEASE_DIR/README.md"
+        echo "## Device Information" >> "$RELEASE_DIR/README.md"
+        echo "- Supported chip: ${{ env.TARGET_CHIP }}" >> "$RELEASE_DIR/README.md"
+        echo "- Included devices: JDCloud Arthur (jdcloud_re-ss-01), JDCloud Athena (jdcloud_re-cs-02)" >> "$RELEASE_DIR/README.md"
         echo "" >> "$RELEASE_DIR/README.md"
-        echo "## 默认设置" >> "$RELEASE_DIR/README.md"
-        echo "- 默认管理地址: 192.168.111.1" >> "$RELEASE_DIR/README.md"
-        echo "- 默认用户: root" >> "$RELEASE_DIR/README.md"
-        echo "- 默认密码: none" >> "$RELEASE_DIR/README.md"
-        echo "- 默认WIFI密码: 12345678" >> "$RELEASE_DIR/README.md"
+        echo "## Default Settings" >> "$RELEASE_DIR/README.md"
+        echo "- Default management address: 192.168.111.1" >> "$RELEASE_DIR/README.md"
+        echo "- Default user: root" >> "$RELEASE_DIR/README.md"
+        echo "- Default password: none" >> "$RELEASE_DIR/README.md"
+        echo "- Default WIFI password: 12345678" >> "$RELEASE_DIR/README.md"
         echo "" >> "$RELEASE_DIR/README.md"
-        echo "## 固件版本" >> "$RELEASE_DIR/README.md"
-        echo "- 内核版本: (待从buildinfo中提取)" >> "$RELEASE_DIR/README.md"
-        echo "- 作者: Mary" >> "$RELEASE_DIR/README.md"
-        echo "- 发布时间: $DATE" >> "$RELEASE_DIR/README.md"
+        echo "## Firmware Version" >> "$RELEASE_DIR/README.md"
+        echo "- Kernel version: (to be extracted from buildinfo)" >> "$RELEASE_DIR/README.md"
+        echo "- Author: Mary" >> "$RELEASE_DIR/README.md"
+        echo "- Release date: $DATE" >> "$RELEASE_DIR/README.md"
         echo "" >> "$RELEASE_DIR/README.md"
-        echo "## 编译配置" >> "$RELEASE_DIR/README.md"
-        echo "- Ultra: 包含最多软件包" >> "$RELEASE_DIR/README.md"
-        echo "- Max: 包含中等软件包" >> "$RELEASE_DIR/README.md"
-        echo "- Pro: 包含基础软件包(不含Docker/USB/Coremark)" >> "$RELEASE_DIR/README.md"
+        echo "## Compile Configurations" >> "$RELEASE_DIR/README.md"
+        echo "- Ultra: Contains most packages" >> "$RELEASE_DIR/README.md"
+        echo "- Max: Contains medium packages" >> "$RELEASE_DIR/README.md"
+        echo "- Pro: Contains basic packages (no Docker/USB/Coremark)" >> "$RELEASE_DIR/README.md"
         echo "" >> "$RELEASE_DIR/README.md"
-        echo "## 包含的Luci应用" >> "$RELEASE_DIR/README.md"
-        echo "(待从配置中提取)" >> "$RELEASE_DIR/README.md"
+        echo "## Included Luci Apps" >> "$RELEASE_DIR/README.md"
+        echo "(to be extracted from config)" >> "$RELEASE_DIR/README.md"
         echo "" >> "$RELEASE_DIR/README.md"
-        echo "## 文件说明" >> "$RELEASE_DIR/README.md"
-        echo "- 固件文件: 各设备的factory和sysupgrade固件" >> "$RELEASE_DIR/README.md"
-        echo "- 配置包: ${{ env.TARGET_CHIP }}-config.tar.gz - 包含所有编译配置文件" >> "$RELEASE_DIR/README.md"
-        echo "- 日志包: ${{ env.TARGET_CHIP }}-log.tar.gz - 包含所有编译日志" >> "$RELEASE_DIR/README.md"
-        echo "- 应用包: ${{ env.TARGET_CHIP }}-app.tar.gz - 包含所有编译的软件包" >> "$RELEASE_DIR/README.md"
+        echo "## File Description" >> "$RELEASE_DIR/README.md"
+        echo "- Firmware files: Factory and sysupgrade firmware for each device" >> "$RELEASE_DIR/README.md"
+        echo "- Config package: ${{ env.TARGET_CHIP }}-config.tar.gz - Contains all compile config files" >> "$RELEASE_DIR/README.md"
+        echo "- Log package: ${{ env.TARGET_CHIP }}-log.tar.gz - Contains all compile logs" >> "$RELEASE_DIR/README.md"
+        echo "- App package: ${{ env.TARGET_CHIP }}-app.tar.gz - Contains all compiled packages" >> "$RELEASE_DIR/README.md"
         
-        echo "发布说明生成完成"
+        echo "Release notes generated"
         
-    - name: 创建发布
+    - name: Create release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.TARGET_CHIP }}-${{ github.run_number }}
-        name: "${{ env.TARGET_CHIP }}固件-${{ github.run_number }}"
+        name: "${{ env.TARGET_CHIP }} Firmware-${{ github.run_number }}"
         body_path: ${{ env.TEMP_DIR }}/release/README.md
         files: |
           ${{ env.TEMP_DIR }}/release/firmware/*
