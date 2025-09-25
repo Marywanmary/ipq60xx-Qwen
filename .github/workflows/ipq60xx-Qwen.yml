@@ -403,39 +403,37 @@ jobs:
         DATE=$(date +%Y-%m-%d)
         RELEASE_DIR="${{ env.TEMP_DIR }}/release"
         
-        cat > "$RELEASE_DIR/README.md" << 'EOF'
-# OpenWrt Firmware Release - $DATE
-
-## Device Information
-- Supported chip: ${{ env.TARGET_CHIP }}
-- Included devices: JDCloud Arthur (jdcloud_re-ss-01), JDCloud Athena (jdcloud_re-cs-02)
-
-## Default Settings
-- Default management address: 192.168.111.1
-- Default user: root
-- Default password: none
-- Default WIFI password: 12345678
-
-## Firmware Version
-- Kernel version: (to be extracted from buildinfo)
-- Author: Mary
-- Release date: $DATE
-
-## Compile Configurations
-- Ultra: Contains most packages
-- Max: Contains medium packages  
-- Pro: Contains basic packages (no Docker/USB/Coremark)
-
-## Included Luci Apps
-(to be extracted from config)
-
-## File Description
-- Firmware files: Factory and sysupgrade firmware for each device
-- Config package: ${{ env.TARGET_CHIP }}-config.tar.gz - Contains all compile config files
-- Log package: ${{ env.TARGET_CHIP }}-log.tar.gz - Contains all compile logs
-- App package: ${{ env.TARGET_CHIP }}-app.tar.gz - Contains all compiled packages
-
-EOF
+        # Use a different approach for creating the README to avoid YAML syntax issues
+        echo "# OpenWrt Firmware Release - $DATE" > "$RELEASE_DIR/README.md"
+        echo "" >> "$RELEASE_DIR/README.md"
+        echo "## Device Information" >> "$RELEASE_DIR/README.md"
+        echo "- Supported chip: ${{ env.TARGET_CHIP }}" >> "$RELEASE_DIR/README.md"
+        echo "- Included devices: JDCloud Arthur (jdcloud_re-ss-01), JDCloud Athena (jdcloud_re-cs-02)" >> "$RELEASE_DIR/README.md"
+        echo "" >> "$RELEASE_DIR/README.md"
+        echo "## Default Settings" >> "$RELEASE_DIR/README.md"
+        echo "- Default management address: 192.168.111.1" >> "$RELEASE_DIR/README.md"
+        echo "- Default user: root" >> "$RELEASE_DIR/README.md"
+        echo "- Default password: none" >> "$RELEASE_DIR/README.md"
+        echo "- Default WIFI password: 12345678" >> "$RELEASE_DIR/README.md"
+        echo "" >> "$RELEASE_DIR/README.md"
+        echo "## Firmware Version" >> "$RELEASE_DIR/README.md"
+        echo "- Kernel version: (to be extracted from buildinfo)" >> "$RELEASE_DIR/README.md"
+        echo "- Author: Mary" >> "$RELEASE_DIR/README.md"
+        echo "- Release date: $DATE" >> "$RELEASE_DIR/README.md"
+        echo "" >> "$RELEASE_DIR/README.md"
+        echo "## Compile Configurations" >> "$RELEASE_DIR/README.md"
+        echo "- Ultra: Contains most packages" >> "$RELEASE_DIR/README.md"
+        echo "- Max: Contains medium packages" >> "$RELEASE_DIR/README.md"
+        echo "- Pro: Contains basic packages (no Docker/USB/Coremark)" >> "$RELEASE_DIR/README.md"
+        echo "" >> "$RELEASE_DIR/README.md"
+        echo "## Included Luci Apps" >> "$RELEASE_DIR/README.md"
+        echo "(to be extracted from config)" >> "$RELEASE_DIR/README.md"
+        echo "" >> "$RELEASE_DIR/README.md"
+        echo "## File Description" >> "$RELEASE_DIR/README.md"
+        echo "- Firmware files: Factory and sysupgrade firmware for each device" >> "$RELEASE_DIR/README.md"
+        echo "- Config package: ${{ env.TARGET_CHIP }}-config.tar.gz - Contains all compile config files" >> "$RELEASE_DIR/README.md"
+        echo "- Log package: ${{ env.TARGET_CHIP }}-log.tar.gz - Contains all compile logs" >> "$RELEASE_DIR/README.md"
+        echo "- App package: ${{ env.TARGET_CHIP }}-app.tar.gz - Contains all compiled packages" >> "$RELEASE_DIR/README.md"
         
         echo "Release notes generated"
         
