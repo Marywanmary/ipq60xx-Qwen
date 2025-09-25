@@ -1,3 +1,4 @@
+# .github/workflows/ipq60xx-Qwen.yml
 name: ipq60xx-Qwen
 
 on:
@@ -398,9 +399,13 @@ jobs:
         find ${{ env.TEMP_DIR }}/downloads -path "*/apps/*" -name "*.ipk" -exec cp {} "$RELEASE_DIR/apps/" \; 2>/dev/null || true
         tar -czf "$RELEASE_DIR/${{ env.TARGET_CHIP }}-app.tar.gz" -C "$RELEASE_DIR/apps" .
         
+    - name: 生成发布说明
+      run: |
         # 生成发布说明
         DATE=$(date +%Y-%m-%d)
-        cat > "$RELEASE_DIR/README.md" << EOF
+        RELEASE_DIR="${{ env.TEMP_DIR }}/release"
+        
+        cat > "$RELEASE_DIR/README.md" << 'EOF'
 # OpenWrt固件发布 - $DATE
 
 ## 设备信息
@@ -434,7 +439,7 @@ jobs:
 
 EOF
         
-        echo "发布内容整理完成"
+        echo "发布说明生成完成"
         
     - name: 创建发布
       uses: softprops/action-gh-release@v2
